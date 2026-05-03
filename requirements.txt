@@ -22,6 +22,7 @@ trafilatura==1.12.0
 
 # Streamlit UI
 streamlit==1.38.0
+rich==13.9.4
 
 # Utilities
 python-dotenv==1.0.1
