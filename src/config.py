@@ -8,6 +8,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
+try:
+    import streamlit as st
+    for k, v in st.secrets.items():
+        os.environ.setdefault(k, str(v))
+except Exception:
+    pass
 # Load .env from project root
 load_dotenv(Path(__file__).parent.parent / ".env")
 
