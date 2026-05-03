@@ -1,0 +1,22 @@
+[global]
+developmentMode = false
+
+[server]
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+gatherUsageStats = false
+
+[client]
+# Keep sidebar expanded by default
+showSidebarNavigation = true
+
+[theme]
+base = "dark"
+primaryColor = "#6C63FF"
+backgroundColor = "#0D0D1A"
+secondaryBackgroundColor = "#1A1A2E"
+textColor = "#E8E8F0"
+font = "sans serif"
