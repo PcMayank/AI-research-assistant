@@ -1,3 +1,14 @@
+---
+title: AI Research Assistant
+emoji: 🔬
+colorFrom: blue
+colorTo: purple
+sdk: streamlit
+sdk_version: 1.38.0
+app_file: app.py
+pinned: false
+---
+
 # 🔬 AI Research Assistant
 
 A **production-grade RAG (Retrieval-Augmented Generation)** system that lets you chat with your documents — PDFs, DOCX files, web pages — using any LLM.
@@ -33,7 +44,6 @@ RAG Engine                                            Document Ingestion
 ai_research_assistant/
 ├── app.py                  ← Streamlit UI (main entry point)
 ├── requirements.txt        ← All dependencies
-├── setup.py                ← One-click setup script
 ├── .env.example            ← Config template → copy to .env
 │
 ├── src/
@@ -61,12 +71,11 @@ ai_research_assistant/
 
 ### Step 2 — Clone & Setup
 ```bash
-# Run the setup script — creates venv + installs everything
-python setup.py
+pip install -r requirements.txt
 ```
 
 ### Step 3 — Configure API Key
-Open `.env` and set your key:
+Copy `.env.example` to `.env` and set your key:
 
 **Option A: Groq (FREE, fast)**
 ```
@@ -81,14 +90,8 @@ LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-your_key_here
 ```
 
-### Step 4 — Activate venv & Run
+### Step 4 — Run
 ```bash
-# Windows
-.venv\Scripts\activate
-streamlit run app.py
-
-# Mac / Linux
-source .venv/bin/activate
 streamlit run app.py
 ```
 
@@ -106,7 +109,7 @@ Visit → **http://localhost:8501**
 | **Web Scraping** | trafilatura + BeautifulSoup fallback |
 | **Embeddings** | sentence-transformers (local, free) OR OpenAI |
 | **Vector Store** | ChromaDB (persistent, on-disk) |
-| **LLM** | Groq Llama 3.1 (free) OR OpenAI GPT-4o |
+| **LLM** | Groq Llama 3.3 (free) OR OpenAI GPT-4o |
 | **Streaming** | Token-by-token streaming responses |
 | **Memory** | Sliding-window conversation history (6 turns) |
 | **Deduplication** | MD5 hash-based chunk deduplication |
@@ -123,7 +126,7 @@ Visit → **http://localhost:8501**
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LLM_PROVIDER` | `groq` | `groq` or `openai` |
-| `GROQ_MODEL` | `llama-3.1-70b-versatile` | Groq model name |
+| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model name |
 | `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model name |
 | `EMBEDDING_PROVIDER` | `local` | `local` or `openai` |
 | `CHUNK_SIZE` | `800` | Characters per chunk |
@@ -144,23 +147,10 @@ Once you've uploaded a research paper:
 
 ---
 
-## 🔮 Ideas to Extend This
-
-- [ ] Add **Arxiv API** integration (search + auto-ingest papers)
-- [ ] Export chat as **PDF report**
-- [ ] Add **citation graph** visualisation
-- [ ] Integrate **Google Scholar** scraping
-- [ ] Add **multi-user** support with authentication
-- [ ] Deploy on **Streamlit Cloud** or **Hugging Face Spaces**
-- [ ] Add **speech input** (Whisper API)
-- [ ] Add **multi-modal** support (charts, figures in PDFs)
-
----
-
 ## 🛠️ Troubleshooting
 
 **"Module not found" error**
-→ Make sure you activated the venv before running
+→ Make sure all requirements are installed
 
 **ChromaDB error on first run**
 → Delete `./vectorstore` folder and restart
