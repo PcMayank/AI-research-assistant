@@ -16,13 +16,29 @@ def get_embeddings() -> Embeddings:
     logger.info(f"Initialising embeddings — provider={provider}")
 
     if provider == "local":
-        from langchain_community.embeddings import HuggingFaceEmbeddings
+        # Detect correct device safely — fixes Streamlit Cloud crash
+        try:
+            import torch
+            if torch.cuda.is_available():
+                device = "cuda"
+            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                device = "mps"
+            else:
+                device = "cpu"
+        except Exception:
+            device = "cpu"
+
+        try:
+            from langchain_huggingface import HuggingFaceEmbeddings
+        except ImportError:
+            from langchain_community.embeddings import HuggingFaceEmbeddings
+
         embeddings = HuggingFaceEmbeddings(
             model_name=settings.embedding_model,
-            model_kwargs={"device": "cpu"},
+            model_kwargs={"device": device},
             encode_kwargs={"normalize_embeddings": True},
         )
-        logger.info(f"Local embeddings ready — model={settings.embedding_model}")
+        logger.info(f"Local embeddings ready — model={settings.embedding_model} device={device}")
         return embeddings
 
     elif provider == "openai":
