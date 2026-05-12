@@ -14,17 +14,21 @@ try:
         os.environ.setdefault(k, str(v))
 except Exception:
     pass
+
 # Load .env from project root
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 
 class Settings(BaseModel):
     # LLM
-    llm_provider: str = Field(default_factory=lambda: os.getenv("LLM_PROVIDER", "groq"))
+    llm_provider: str = Field(default_factory=lambda: os.getenv("LLM_PROVIDER", "gemini"))
     openai_api_key: str = Field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
     openai_model: str = Field(default_factory=lambda: os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
     groq_api_key: str = Field(default_factory=lambda: os.getenv("GROQ_API_KEY", ""))
-    groq_model: str = Field(default_factory=lambda: os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile"))
+    groq_model: str = Field(default_factory=lambda: os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"))
+    gemini_api_key: str = Field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
+    # ✅ gemini-1.5-flash removed from API — gemini-2.0-flash is the correct default
+    gemini_model: str = Field(default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-2.0-flash"))
 
     # Embeddings
     embedding_provider: str = Field(default_factory=lambda: os.getenv("EMBEDDING_PROVIDER", "local"))
@@ -54,6 +58,8 @@ class Settings(BaseModel):
             issues.append("OPENAI_API_KEY is missing or invalid in .env")
         if self.llm_provider == "groq" and not self.groq_api_key.startswith("gsk_"):
             issues.append("GROQ_API_KEY is missing or invalid in .env")
+        if self.llm_provider == "gemini" and not self.gemini_api_key:
+            issues.append("GEMINI_API_KEY is missing in .env")
         return issues
 
 

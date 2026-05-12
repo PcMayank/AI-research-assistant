@@ -1,31 +1,38 @@
-# Core LLM & RAG
+# ─── Core LLM & RAG ───────────────────────────────────────────────────────────
 langchain==0.2.16
 langchain-community==0.2.16
+langchain-core==0.2.38
 langchain-openai==0.1.23
 langchain-groq==0.1.9
 langchain-chroma==0.1.4
 langchain-huggingface==0.0.3
+langchain-text-splitters==0.2.4
 openai==1.45.0
+langchain-google-genai==1.0.10
+google-generativeai==0.7.2
 
-# Vector Store
-chromadb==0.5.3
+# ─── Vector Store ─────────────────────────────────────────────────────────────
+chromadb==0.5.20
 sentence-transformers==3.0.1
 
-# Document Loaders
+# ─── Persistent Storage ───────────────────────────────────────────────────────
+huggingface_hub==0.24.6
+
+# ─── Document Loaders ─────────────────────────────────────────────────────────
 pypdf==4.3.1
 pymupdf==1.25.5
 python-docx==1.1.2
 
-# Web Scraping
+# ─── Web Scraping ─────────────────────────────────────────────────────────────
 requests==2.32.3
 beautifulsoup4==4.12.3
 trafilatura==1.12.0
 
-# Streamlit UI
+# ─── Streamlit UI ─────────────────────────────────────────────────────────────
 streamlit==1.38.0
 rich==13.9.4
 
-# Utilities
+# ─── Utilities ────────────────────────────────────────────────────────────────
 python-dotenv==1.0.1
 tenacity==8.5.0
 loguru==0.7.2

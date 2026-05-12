@@ -6,9 +6,11 @@ Responsibilities:
   • Similarity search with metadata filters
   • Collection stats & document listing
   • Delete documents by source
+  • Persistent storage via HuggingFace dataset (push/pull)
 """
 from __future__ import annotations
 import hashlib
+import shutil
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
@@ -32,18 +34,73 @@ class VectorStoreManager:
         self._init_store()
 
     def _init_store(self):
-        """Initialise or load the ChromaDB store."""
+        """Initialise or load the ChromaDB store. Pulls from HF on first run."""
+        Path(self._persist_dir).mkdir(parents=True, exist_ok=True)
+
+        # Pull from HuggingFace persistent storage if available
+        try:
+            from src.storage import pull_vectorstore, is_persistent_storage_enabled
+            if is_persistent_storage_enabled():
+                pull_vectorstore(self._persist_dir)
+        except Exception as e:
+            logger.warning(f"Storage pull failed (non-fatal): {e}")
+
+        try:
+            self._store = Chroma(
+                collection_name=self._collection_name,
+                embedding_function=self._embeddings,
+                persist_directory=self._persist_dir,
+            )
+            count = self._safe_count()
+            logger.info(
+                f"VectorStore ready — collection='{self._collection_name}' "
+                f"docs={count} persist='{self._persist_dir}'"
+            )
+        except Exception as e:
+            logger.warning(f"VectorStore init failed ({e}) — resetting.")
+            self._reset_store()
+
+    def _reset_store(self):
+        """Wipe and recreate the vector store from scratch."""
+        try:
+            if Path(self._persist_dir).exists():
+                shutil.rmtree(self._persist_dir)
+                logger.info(f"Wiped corrupt DB at '{self._persist_dir}'")
+        except Exception as e:
+            logger.error(f"Could not wipe DB dir: {e}")
+
         Path(self._persist_dir).mkdir(parents=True, exist_ok=True)
         self._store = Chroma(
             collection_name=self._collection_name,
             embedding_function=self._embeddings,
             persist_directory=self._persist_dir,
         )
-        count = self._store._collection.count()
-        logger.info(
-            f"VectorStore ready — collection='{self._collection_name}' "
-            f"docs={count} persist='{self._persist_dir}'"
-        )
+        logger.info("VectorStore reset — fresh empty collection created")
+
+    def _safe_count(self) -> int:
+        """
+        Safely get document count.
+        Handles chromadb 0.5.x _decode_seq_id bug gracefully.
+        """
+        try:
+            return self._store._collection.count()
+        except TypeError:
+            try:
+                result = self._store._collection.get(include=[])
+                return len(result.get("ids", []))
+            except Exception:
+                return 0
+        except Exception:
+            return 0
+
+    def _push_to_storage(self):
+        """Push vectorstore to HuggingFace after every write operation."""
+        try:
+            from src.storage import push_vectorstore, is_persistent_storage_enabled
+            if is_persistent_storage_enabled():
+                push_vectorstore(self._persist_dir)
+        except Exception as e:
+            logger.warning(f"Storage push failed (non-fatal): {e}")
 
     # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -63,7 +120,6 @@ class VectorStoreManager:
         if not docs:
             return 0, 0
 
-        # Fetch existing IDs to avoid duplicates
         existing_ids: set = set()
         try:
             existing = self._store._collection.get(include=[])
@@ -83,6 +139,8 @@ class VectorStoreManager:
         if new_docs:
             self._store.add_documents(new_docs, ids=new_ids)
             logger.info(f"Added {len(new_docs)} chunks | Skipped {skipped} duplicates")
+            # Push to persistent storage after every successful write
+            self._push_to_storage()
 
         return len(new_docs), skipped
 
@@ -94,18 +152,13 @@ class VectorStoreManager:
         k: int = None,
         source_filter: Optional[str] = None,
     ) -> List[Document]:
-        """
-        Similarity search. Optionally filter by source name.
-        Returns top-k most relevant documents.
-        """
+        """Similarity search. Optionally filter by source name."""
         k = k or settings.top_k_results
-
         search_kwargs: dict = {"k": k}
         if source_filter:
             search_kwargs["filter"] = {"source": source_filter}
-
         results = self._store.similarity_search(query, **search_kwargs)
-        logger.debug(f"Search '{query[:60]}...' → {len(results)} results")
+        logger.debug(f"Search '{query[:60]}' → {len(results)} results")
         return results
 
     def search_with_scores(
@@ -123,10 +176,12 @@ class VectorStoreManager:
     def get_stats(self) -> Dict:
         """Return collection statistics."""
         try:
-            total = self._store._collection.count()
+            total = self._safe_count()
             all_meta = self._store._collection.get(include=["metadatas"])
             sources: Dict[str, Dict] = {}
-            for meta in all_meta.get("metadatas", []):
+            for meta in (all_meta.get("metadatas") or []):
+                if not meta:
+                    continue
                 src = meta.get("source", "unknown")
                 if src not in sources:
                     sources[src] = {
@@ -160,15 +215,15 @@ class VectorStoreManager:
             if ids:
                 self._store._collection.delete(ids=ids)
                 logger.info(f"Deleted {len(ids)} chunks from source='{source}'")
+                # Push to persistent storage after delete
+                self._push_to_storage()
             return len(ids)
         except Exception as e:
             logger.error(f"Delete error for source '{source}': {e}")
             return 0
 
     def is_empty(self) -> bool:
-        return self._store._collection.count() == 0
-
-    # ── Retriever (for RAG chain) ─────────────────────────────────────────────
+        return self._safe_count() == 0
 
     def as_retriever(self, k: int = None):
         """Return a LangChain retriever interface."""

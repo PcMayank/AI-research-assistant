@@ -35,7 +35,7 @@ RAG Engine                                            Document Ingestion
     ├── Prompt Builder
     │     (system + chat history + context + question)
     │
-    └── LLM (OpenAI GPT-4o / Groq Llama 3) ──► Streaming Answer
+    └── LLM (Groq Llama 3.3 / OpenAI GPT-4o) ──► Streaming Answer
 ```
 
 ## 📁 Project Structure
@@ -44,15 +44,16 @@ RAG Engine                                            Document Ingestion
 ai_research_assistant/
 ├── app.py                  ← Streamlit UI (main entry point)
 ├── requirements.txt        ← All dependencies
-├── .env.example            ← Config template → copy to .env
+├── packages.txt            ← System dependencies for HuggingFace
 │
 ├── src/
-│   ├── config.py           ← Settings from .env
+│   ├── config.py           ← Settings from .env / HF Secrets
 │   ├── logger.py           ← Loguru logging setup
-│   ├── llm.py              ← LLM factory (OpenAI / Groq)
+│   ├── llm.py              ← LLM factory (Groq / OpenAI / Gemini)
 │   ├── embeddings.py       ← Embedding model factory
 │   ├── ingestion.py        ← PDF / DOCX / Web → LangChain Docs
 │   ├── vectorstore.py      ← ChromaDB manager
+│   ├── storage.py          ← Persistent storage via HF Dataset
 │   ├── rag_chain.py        ← Core RAG pipeline + memory
 │   └── utils.py            ← Helper functions
 │
@@ -67,9 +68,8 @@ ai_research_assistant/
 
 ### Step 1 — Prerequisites
 - Python 3.9+
-- Git
 
-### Step 2 — Clone & Setup
+### Step 2 — Install
 ```bash
 pip install -r requirements.txt
 ```
@@ -95,9 +95,6 @@ OPENAI_API_KEY=sk-your_key_here
 streamlit run app.py
 ```
 
-### Step 5 — Open in browser
-Visit → **http://localhost:8501**
-
 ---
 
 ## 🚀 Features
@@ -118,14 +115,15 @@ Visit → **http://localhost:8501**
 | **Summarisation** | Full-document summarisation per source |
 | **Library View** | Manage, view, delete ingested documents |
 | **Source Filter** | Ask questions about one specific document |
+| **Persistent Storage** | Documents survive Space restarts via HF Dataset |
 
 ---
 
-## 🔧 Configuration Options (.env)
+## 🔧 Configuration (.env)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `LLM_PROVIDER` | `groq` | `groq` or `openai` |
+| `LLM_PROVIDER` | `groq` | `groq`, `openai`, or `gemini` |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model name |
 | `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model name |
 | `EMBEDDING_PROVIDER` | `local` | `local` or `openai` |
@@ -138,7 +136,6 @@ Visit → **http://localhost:8501**
 
 ## 📝 Example Queries
 
-Once you've uploaded a research paper:
 - *"What is the main contribution of this paper?"*
 - *"Explain the methodology used in section 3"*
 - *"What datasets were used for evaluation?"*
@@ -149,14 +146,10 @@ Once you've uploaded a research paper:
 
 ## 🛠️ Troubleshooting
 
-**"Module not found" error**
-→ Make sure all requirements are installed
+**"Module not found" error** → Run `pip install -r requirements.txt`
 
-**ChromaDB error on first run**
-→ Delete `./vectorstore` folder and restart
+**ChromaDB error on first run** → Delete `./vectorstore` folder and restart
 
-**Slow embeddings on first run**
-→ Model is downloading (~90MB). Next run will be instant.
+**Slow on first run** → Embedding model is downloading (~90MB). Next run instant.
 
-**URL scraping fails**
-→ Some sites block bots. Try a different URL or use the PDF download.
+**URL scraping fails** → Some sites block bots. Try PDF download instead.
